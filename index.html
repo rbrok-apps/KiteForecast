@@ -5,20 +5,31 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>KiteForecast</title>
 <style>
-  body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:16px;background:#f7fbff;color:#033;}
-  header{display:flex;gap:12px;align-items:center}
+  :root{--bg:#f7fbff;--card:#fff;--accent:#036;--muted:#456}
+  body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:16px;background:var(--bg);color:var(--accent)}
+  header{display:flex;flex-direction:column;gap:6px}
+  .top{display:flex;gap:12px;align-items:center}
   input[type="search"]{flex:1;padding:8px;border-radius:6px;border:1px solid #cde}
-  button{padding:8px 12px;border-radius:6px;border:none;background:#036;color:#fff}
-  .card{background:#fff;padding:12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-top:12px}
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:6px;border-bottom:1px solid #eef;text-align:left}
-  .small{font-size:0.9rem;color:#456}
+  button{padding:8px 12px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+  .card{background:var(--card);padding:12px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.06);margin-top:12px}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{padding:8px;border-bottom:1px solid #eef;text-align:left;font-size:0.95rem}
+  th{background:#f0f6fb;color:var(--accent);font-weight:600}
+  .day-header{background:#e9f3ff;font-weight:700}
+  .super-row{background:#fff7e6;font-weight:700}
+  .small{font-size:0.9rem;color:var(--muted)}
+  .meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+  .pill{background:#eef6ff;padding:6px 8px;border-radius:999px;font-weight:600;color:var(--accent)}
+  .center{display:flex;align-items:center;gap:8px}
+  @media(min-width:800px){ .top{flex-direction:row} }
 </style>
 </head>
 <body>
 <header>
-  <h1>KiteForecast</h1>
-  <div class="small">Zoek een spot, bekijk forecast, actuele wind en superforecast (kts)</div>
+  <div class="top">
+    <h1>KiteForecast</h1>
+    <div class="small">Forecast &amp; Superforecast (kts) — 2‑uurs intervallen 08:00–20:00</div>
+  </div>
 </header>
 
 <div class="card">
@@ -33,27 +44,43 @@
 <div id="spotCard"></div>
 
 <script>
-const geocodeUrl = name => `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=nl&format=json`;
-const forecastUrl = (lat,lon) => `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=windspeed_10m,windgusts_10m,winddirection_10m&current_weather=true&timezone=auto`;
-
+/* Config */
+const GEOCODE = name => `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=nl&format=json`;
+const FORECAST = (lat,lon,days=4) => {
+  // vraag voldoende uren op (days * 24)
+  return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=windspeed_10m,windgusts_10m,winddirection_10m&current_weather=true&timezone=auto&forecast_days=${days}`;
+};
 const msToKts = ms => (ms * 1.943844).toFixed(1);
-
-function degToCompass(num){
-  const val = Math.floor((num/22.5)+0.5);
+const degToCompass = deg => {
+  if (deg === null || deg === undefined || isNaN(deg)) return '—';
+  const val = Math.floor((deg/22.5)+0.5);
   const arr = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
   return arr[(val % 16)];
+};
+
+/* Helpers */
+function parseLocalHour(timestr){
+  // timestr from API already in local timezone (e.g., "2026-02-01T08:00")
+  const d = new Date(timestr);
+  return d.getHours();
+}
+function formatDateLabel(timestr){
+  const d = new Date(timestr);
+  return d.toLocaleDateString(undefined,{weekday:'short',day:'2-digit',month:'short'});
 }
 
+/* Search */
 document.getElementById('searchBtn').addEventListener('click', async ()=>{
   const q = document.getElementById('q').value.trim();
   if(!q) return;
-  document.getElementById('results').textContent = 'Zoeken...';
+  const resEl = document.getElementById('results');
+  resEl.textContent = 'Zoeken...';
   try{
-    const r = await fetch(geocodeUrl(q));
+    const r = await fetch(GEOCODE(q));
     const j = await r.json();
-    if(!j.results || j.results.length===0){ document.getElementById('results').textContent='Geen resultaten'; return; }
-    const list = j.results.map((s,i)=>`<div><button data-i="${i}" class="spotBtn">${s.name}, ${s.country} (${s.latitude.toFixed(3)}, ${s.longitude.toFixed(3)})</button></div>`).join('');
-    document.getElementById('results').innerHTML = list;
+    if(!j.results || j.results.length===0){ resEl.textContent='Geen resultaten'; return; }
+    const list = j.results.map((s,i)=>`<div style="margin-top:6px"><button data-i="${i}" class="spotBtn">${s.name}${s.admin1 ? ', '+s.admin1 : ''}, ${s.country} — (${s.latitude.toFixed(3)}, ${s.longitude.toFixed(3)})</button></div>`).join('');
+    resEl.innerHTML = list;
     document.querySelectorAll('.spotBtn').forEach(btn=>{
       btn.addEventListener('click', ()=> {
         const idx = btn.dataset.i;
@@ -61,56 +88,124 @@ document.getElementById('searchBtn').addEventListener('click', async ()=>{
         loadSpot(spot);
       });
     });
-  }catch(e){ document.getElementById('results').textContent='Fout bij zoeken'; }
+  }catch(e){
+    resEl.textContent='Fout bij zoeken';
+  }
 });
 
+/* Main loader */
 async function loadSpot(spot){
   const container = document.getElementById('spotCard');
   container.innerHTML = `<div class="card"><strong>${spot.name}, ${spot.country}</strong><div class="small">Laden forecast...</div></div>`;
   try{
-    const r = await fetch(forecastUrl(spot.latitude, spot.longitude));
+    const r = await fetch(FORECAST(spot.latitude, spot.longitude, 4));
     const j = await r.json();
     const cur = j.current_weather;
     const hourly = j.hourly;
-    // current
-    const curKts = msToKts(cur.windspeed);
-    const curDir = degToCompass(cur.winddirection);
-    // compute 72h averages and max gust
-    const nowIdx = hourly.time.findIndex(t => new Date(t) >= new Date());
-    const slice = hourly.time.slice(nowIdx, nowIdx + 72);
-    const speeds = hourly.windspeed_10m.slice(nowIdx, nowIdx + 72).map(Number);
-    const gusts = hourly.windgusts_10m.slice(nowIdx, nowIdx + 72).map(Number);
-    const avg = (speeds.reduce((a,b)=>a+b,0)/speeds.length) || 0;
-    const maxGust = Math.max(...gusts);
-    // build table of next 12 hours
-    let rows = '';
-    for(let i=0;i<12 && i<speeds.length;i++){
-      const t = slice[i];
-      const s = msToKts(speeds[i]);
-      const g = msToKts(gusts[i]);
-      const dir = degToCompass(hourly.winddirection_10m[nowIdx + i]);
-      rows += `<tr><td>${t}</td><td>${s} kts</td><td>${g} kts</td><td>${dir}</td></tr>`;
+    if(!hourly || !hourly.time){ container.innerHTML = `<div class="card">Geen forecastdata beschikbaar</div>`; return; }
+
+    // Build index map: time -> index
+    const timeIndex = {};
+    hourly.time.forEach((t,i)=> timeIndex[t] = i);
+
+    // Determine days to show (today + next 2 days)
+    const daysToShow = [];
+    for(let i=0;i<3;i++){
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      // find first time string for that date at 08:00 in hourly.time
+      const dateStr = d.toISOString().slice(0,10); // YYYY-MM-DD
+      daysToShow.push(dateStr);
     }
+
+    // For each day, collect slots 08,10,...20 (inclusive)
+    const slotsPerDay = {};
+    daysToShow.forEach(dateStr=>{
+      slotsPerDay[dateStr] = [];
+      for(let h=8; h<=20; h+=2){
+        // build time string matching API format: "YYYY-MM-DDThh:00"
+        const hh = String(h).padStart(2,'0');
+        const tStr = `${dateStr}T${hh}:00`;
+        // find exact match in hourly.time (API uses local timezone strings)
+        // If not found, try to find any time with same date and hour by scanning
+        let idx = timeIndex[tStr];
+        if(idx === undefined){
+          // fallback: search for time that starts with dateStr and hour
+          idx = hourly.time.findIndex(ts => ts.startsWith(`${dateStr}T${hh}:`));
+        }
+        if(idx !== -1 && idx !== undefined){
+          slotsPerDay[dateStr].push(idx);
+        }
+      }
+    });
+
+    // Build HTML table similar to Windfinder: day sections, 2-hour rows, then superforecast row
+    let tableHtml = `<div class="card"><div class="center"><strong style="font-size:1.05rem">Forecast (2‑uurs slots)</strong><div class="pill">kts</div></div>`;
+    tableHtml += `<table><thead><tr><th>Tijd (lokal)</th><th>Wind</th><th>Stoot</th><th>Richting</th></tr></thead><tbody>`;
+
+    for(const dateStr of daysToShow){
+      const idxs = slotsPerDay[dateStr];
+      // Day header row
+      const sampleTime = hourly.time[idxs.length? idxs[0] : hourly.time.findIndex(t=>t.startsWith(dateStr))] || (dateStr + 'T08:00');
+      tableHtml += `<tr class="day-header"><td colspan="4">${formatDateLabel(sampleTime)}</td></tr>`;
+
+      // If no slots found, show message
+      if(!idxs || idxs.length===0){
+        tableHtml += `<tr><td colspan="4" class="small">Geen 2‑uurs data beschikbaar voor deze dag</td></tr>`;
+        continue;
+      }
+
+      // Collect values for superforecast calculation (use raw m/s)
+      const speedsForSuper = [];
+      const gustsForSuper = [];
+
+      // Rows per slot
+      for(const idx of idxs){
+        const t = hourly.time[idx];
+        const s_ms = Number(hourly.windspeed_10m[idx]);
+        const g_ms = hourly.windgusts_10m ? Number(hourly.windgusts_10m[idx]) : NaN;
+        const dirDeg = hourly.winddirection_10m ? Number(hourly.winddirection_10m[idx]) : NaN;
+        speedsForSuper.push(isFinite(s_ms) ? s_ms : 0);
+        if(isFinite(g_ms)) gustsForSuper.push(g_ms);
+
+        const s_kts = isFinite(s_ms) ? msToKts(s_ms) : '—';
+        const g_kts = isFinite(g_ms) ? msToKts(g_ms) : '—';
+        const dir = isFinite(dirDeg) ? degToCompass(dirDeg) : '—';
+        tableHtml += `<tr><td>${t.replace('T',' ')}</td><td>${s_kts} kts</td><td>${g_kts} kts</td><td>${dir}</td></tr>`;
+      }
+
+      // Superforecast: compute average wind (m/s) and max gust (m/s) across the day's slots (08-20)
+      const avg_ms = speedsForSuper.length ? (speedsForSuper.reduce((a,b)=>a+b,0) / speedsForSuper.length) : NaN;
+      const maxGust_ms = gustsForSuper.length ? Math.max(...gustsForSuper) : NaN;
+      const avg_kts = isFinite(avg_ms) ? msToKts(avg_ms) : '—';
+      const maxGust_kts = isFinite(maxGust_ms) ? msToKts(maxGust_ms) : '—';
+
+      tableHtml += `<tr class="super-row"><td>Superforecast (08:00–20:00)</td><td>${avg_kts} kts</td><td>${maxGust_kts} kts</td><td>—</td></tr>`;
+    }
+
+    tableHtml += `</tbody></table></div>`;
+
+    // Current weather card
+    const curKts = cur && cur.windspeed !== undefined ? msToKts(cur.windspeed) : '—';
+    const curDir = cur && cur.winddirection !== undefined ? degToCompass(cur.winddirection) : '—';
+    const curTime = cur && cur.time ? cur.time.replace('T',' ') : '—';
+
     container.innerHTML = `
       <div class="card">
         <h3>${spot.name}, ${spot.country}</h3>
-        <div><strong>Actueel:</strong> ${curKts} kts • richting ${curDir}</div>
-        <div class="small">Temperatuur: ${cur.temperature ?? 'n.v.t.'}°C • Tijd: ${cur.time}</div>
+        <div class="meta">
+          <div class="pill">Actueel: <strong>${curKts} kts</strong></div>
+          <div class="small">Richting: <strong>${curDir}</strong></div>
+          <div class="small">Tijd: ${curTime}</div>
+        </div>
       </div>
-      <div class="card">
-        <strong>Superforecast (72u)</strong>
-        <div class="small">Gemiddelde wind: <strong>${msToKts(avg)} kts</strong> • Max stoot: <strong>${msToKts(maxGust)} kts</strong></div>
-      </div>
-      <div class="card">
-        <strong>Forecast (volgende 12 uur)</strong>
-        <table><thead><tr><th>Tijd</th><th>Wind</th><th>Stoot</th><th>Richting</th></tr></thead><tbody>${rows}</tbody></table>
-      </div>
+      ${tableHtml}
     `;
   }catch(e){
+    console.error(e);
     container.innerHTML = `<div class="card">Fout bij laden forecast</div>`;
   }
 }
 </script>
 </body>
 </html>
-
