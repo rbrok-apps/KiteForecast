@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>KiteForecast — Windfinder stijl (10 dagen, gecorrigeerd)</title>
+<title>KiteForecast — Windfinder stijl (10 dagen, finale correcties)</title>
 <style>
 :root{
   --bg:#eaf6ff; --card:#fff; --accent:#0b6fb8; --accent-dark:#075a92; --muted:#6b7b8a; --text:#042b3a;
@@ -59,7 +59,7 @@ input[type="search"]{width:320px;padding:8px;border-radius:8px;border:1px solid 
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <h1>KiteForecast</h1>
-        <div class="subtitle">10 dagen • 2‑uurs slots 08:00–20:00 • superforecast in extra kolommen</div>
+        <div class="subtitle">10 dagen • 2‑uurs slots 08:00–20:00 • superforecast als dagrange</div>
       </div>
     </div>
   </header>
@@ -164,6 +164,17 @@ document.querySelectorAll('.quickButtons button').forEach(btn=>{
   });
 });
 
+/* Helper: find index for local time slot (YYYY-MM-DDThh:00) with fallback */
+function findHourlyIndexFor(dateStr, hour, hourlyTimes){
+  const hh = String(hour).padStart(2,'0');
+  const tStr = `${dateStr}T${hh}:00`;
+  let idx = hourlyTimes.indexOf(tStr);
+  if(idx !== -1) return idx;
+  // fallback: find any time that starts with dateStr + 'T' + hh
+  idx = hourlyTimes.findIndex(ts => ts.startsWith(`${dateStr}T${hh}:`));
+  return idx;
+}
+
 /* Main loader */
 async function loadSpot(spot){
   const container = document.getElementById('spotCard');
@@ -186,39 +197,36 @@ async function loadSpot(spot){
     days.forEach(dateStr=>{
       slotsPerDay[dateStr]=[];
       for(let h=8; h<=20; h+=2){
-        const hh = String(h).padStart(2,'0');
-        let tStr = `${dateStr}T${hh}:00`;
-        let idx = timeIndex[tStr];
-        if(idx === undefined) idx = hourly.time.findIndex(ts => ts.startsWith(`${dateStr}T${hh}:`));
+        const idx = findHourlyIndexFor(dateStr, h, hourly.time);
         if(idx !== -1 && idx !== undefined) slotsPerDay[dateStr].push(idx);
       }
     });
 
-    // precompute super per day (avg m/s across slots 08-20, max gust m/s)
+    // precompute super per day as day range (min-max) in kts for mean and gusts
     const superPerDay = {};
     for(const dateStr of days){
       const idxs = slotsPerDay[dateStr] || [];
-      const speeds = []; const gusts = [];
+      const meanKts = [];
+      const gustKts = [];
       for(const idx of idxs){
         const s_ms = Number(hourly.windspeed_10m[idx]);
         const g_ms = Number(hourly.windgusts_10m?.[idx]);
-        if(Number.isFinite(s_ms)) speeds.push(s_ms);
-        if(Number.isFinite(g_ms)) gusts.push(g_ms);
+        if(Number.isFinite(s_ms)) meanKts.push(msToKtsRounded(s_ms));
+        if(Number.isFinite(g_ms)) gustKts.push(msToKtsRounded(g_ms));
       }
-      const avg_ms = speeds.length ? (speeds.reduce((a,b)=>a+b,0)/speeds.length) : NaN;
-      const maxGust_ms = gusts.length ? Math.max(...gusts) : NaN;
+      const meanMin = meanKts.length ? Math.min(...meanKts) : null;
+      const meanMax = meanKts.length ? Math.max(...meanKts) : null;
+      const gustMin = gustKts.length ? Math.min(...gustKts) : null;
+      const gustMax = gustKts.length ? Math.max(...gustKts) : null;
       superPerDay[dateStr] = {
-        avg_ms,
-        maxGust_ms,
-        avg_kts_rounded: Number.isFinite(avg_ms) ? msToKtsRounded(avg_ms) : null,
-        maxGust_kts_rounded: Number.isFinite(maxGust_ms) ? msToKtsRounded(maxGust_ms) : null
+        meanMin, meanMax, gustMin, gustMax
       };
     }
 
     // build html
     let html = `<div class="spotCard"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800">${spot.name}${spot.country? ', '+spot.country:''}</div><div style="display:flex;gap:10px;align-items:center"><div class="pill">kts</div><div class="subtitle">Tijdzone: ${j.timezone || 'lokale tijd'}</div></div></div>`;
 
-    // current weather (color sensitive)
+    // current weather (color sensitive) - use current windspeed (mean)
     const curKtsRounded = Number.isFinite(cur?.windspeed) ? msToKtsRounded(cur.windspeed) : null;
     const curKtsDisplay = curKtsRounded !== null ? curKtsRounded : '—';
     const curClass = windColorClassFromKts(curKtsRounded);
@@ -226,7 +234,7 @@ async function loadSpot(spot){
     html += `<div style="margin-top:8px"><strong>Actueel:</strong> <span class="speed-pill ${curClass}">${curKtsDisplay} kts</span> • richting <strong>${curDir}</strong> • ${cur?.time?.replace('T',' ')||'—'}</div>`;
 
     // table header
-    html += `<table class="wf-table"><thead><tr><th>Tijd</th><th>Wind</th><th>Stoot</th><th>Richting</th><th>Super avg</th><th>Super max stoot</th></tr></thead><tbody>`;
+    html += `<table class="wf-table"><thead><tr><th>Tijd</th><th>Wind</th><th>Stoot</th><th>Richting</th><th>Super (mean)</th><th>Super (gust)</th></tr></thead><tbody>`;
 
     for(const dateStr of days){
       const idxs = slotsPerDay[dateStr];
@@ -241,10 +249,10 @@ async function loadSpot(spot){
       }
 
       const superVals = superPerDay[dateStr];
-      const superAvgDisplay = Number.isFinite(superVals.avg_kts_rounded) ? superVals.avg_kts_rounded : '';
-      const superMaxDisplay = Number.isFinite(superVals.maxGust_kts_rounded) ? superVals.maxGust_kts_rounded : '';
-      const superAvgClass = Number.isFinite(superVals.avg_kts_rounded) ? windColorClassFromKts(superVals.avg_kts_rounded) : 'c-0';
-      const superMaxClass = Number.isFinite(superVals.maxGust_kts_rounded) ? windColorClassFromKts(superVals.maxGust_kts_rounded) : 'c-0';
+      const superMeanText = (superVals.meanMin !== null && superVals.meanMax !== null) ? `${superVals.meanMin} - ${superVals.meanMax} kts` : '';
+      const superGustText = (superVals.gustMin !== null && superVals.gustMax !== null) ? `${superVals.gustMin} - ${superVals.gustMax} kts` : '';
+      const superMeanClass = (superVals.meanMin !== null) ? windColorClassFromKts((superVals.meanMin + superVals.meanMax)/2) : 'c-0';
+      const superGustClass = (superVals.gustMin !== null) ? windColorClassFromKts((superVals.gustMin + superVals.gustMax)/2) : 'c-0';
 
       for(const idx of idxs){
         const t = hourly.time[idx].replace('T',' ');
@@ -270,8 +278,8 @@ async function loadSpot(spot){
           <td><span class="speed-pill ${speedClass}">${s_kts_display} kts</span></td>
           <td><span class="subtitle">${g_kts_display} kts</span></td>
           <td><div class="wind-cell"><span class="wind-arrow" style="${arrowStyle}"><span class="shaft"></span><span class="head"></span></span><span class="subtitle">${dirLabel}</span></div></td>
-          <td>${superAvgDisplay !== '' ? `<span class="speed-pill ${superAvgClass}">${superAvgDisplay} kts</span>` : ''}</td>
-          <td>${superMaxDisplay !== '' ? `<span class="speed-pill ${superMaxClass}">${superMaxDisplay} kts</span>` : ''}</td>
+          <td>${superMeanText ? `<span class="speed-pill ${superMeanClass}">${superMeanText}</span>` : ''}</td>
+          <td>${superGustText ? `<span class="speed-pill ${superGustClass}">${superGustText}</span>` : ''}</td>
         </tr>`;
       }
     }
