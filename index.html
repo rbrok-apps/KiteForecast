@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>KiteForecast — Windfinder stijl (10 dagen, finale correcties)</title>
+<title>KiteForecast — gecorrigeerd (Windfinder-compatibel)</title>
 <style>
 :root{
   --bg:#eaf6ff; --card:#fff; --accent:#0b6fb8; --accent-dark:#075a92; --muted:#6b7b8a; --text:#042b3a;
@@ -15,7 +15,7 @@ header{display:flex;flex-direction:column;gap:6px}
 h1{margin:0;font-size:1.4rem;color:var(--accent-dark)}
 .subtitle{color:var(--muted);font-size:0.9rem}
 
-/* Search area: smaller input + quick buttons */
+/* Search area */
 .searchRow{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
 .searchCard{background:var(--card);padding:10px;border-radius:10px;box-shadow:0 6px 18px rgba(6,30,50,0.06);display:flex;gap:8px;align-items:center}
 input[type="search"]{width:320px;padding:8px;border-radius:8px;border:1px solid #d7eefc;font-size:0.95rem}
@@ -44,13 +44,8 @@ input[type="search"]{width:320px;padding:8px;border-radius:8px;border:1px solid 
 .subtitle{color:var(--muted);font-size:0.9rem}
 
 /* responsive */
-@media(max-width:880px){
-  input[type="search"]{width:220px}
-}
-@media(max-width:640px){
-  .wf-table th:nth-child(1), .wf-table td:nth-child(1){display:none}
-  .wind-arrow{width:26px;height:26px}
-}
+@media(max-width:880px){ input[type="search"]{width:220px} }
+@media(max-width:640px){ .wf-table th:nth-child(1), .wf-table td:nth-child(1){display:none} .wind-arrow{width:26px;height:26px} }
 </style>
 </head>
 <body>
@@ -59,7 +54,7 @@ input[type="search"]{width:320px;padding:8px;border-radius:8px;border:1px solid 
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <h1>KiteForecast</h1>
-        <div class="subtitle">10 dagen • 2‑uurs slots 08:00–20:00 • superforecast als dagrange</div>
+        <div class="subtitle">10 dagen • 2‑uurs slots 08:00–20:00 • superforecast = dagrange (min–max)</div>
       </div>
     </div>
   </header>
@@ -218,9 +213,7 @@ async function loadSpot(spot){
       const meanMax = meanKts.length ? Math.max(...meanKts) : null;
       const gustMin = gustKts.length ? Math.min(...gustKts) : null;
       const gustMax = gustKts.length ? Math.max(...gustKts) : null;
-      superPerDay[dateStr] = {
-        meanMin, meanMax, gustMin, gustMax
-      };
+      superPerDay[dateStr] = { meanMin, meanMax, gustMin, gustMax };
     }
 
     // build html
