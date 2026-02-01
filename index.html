@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>KiteForecast — Windfinder stijl (10 dagen)</title>
+<title>KiteForecast — Windfinder stijl (10 dagen, gecorrigeerd)</title>
 <style>
 :root{
   --bg:#eaf6ff; --card:#fff; --accent:#0b6fb8; --accent-dark:#075a92; --muted:#6b7b8a; --text:#042b3a;
@@ -16,9 +16,10 @@ h1{margin:0;font-size:1.4rem;color:var(--accent-dark)}
 .subtitle{color:var(--muted);font-size:0.9rem}
 
 /* Search area: smaller input + quick buttons */
-.searchRow{display:flex;gap:8px;align-items:center;margin-top:12px}
-.searchCard{background:var(--card);padding:10px;border-radius:10px;box-shadow:0 6px 18px rgba(6,30,50,0.06);display:flex;gap:8px;align-items:center;width:100%}
+.searchRow{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.searchCard{background:var(--card);padding:10px;border-radius:10px;box-shadow:0 6px 18px rgba(6,30,50,0.06);display:flex;gap:8px;align-items:center}
 input[type="search"]{width:320px;padding:8px;border-radius:8px;border:1px solid #d7eefc;font-size:0.95rem}
+button{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:0;cursor:pointer;font-weight:700}
 .quickButtons{display:flex;gap:6px}
 .quickButtons button{background:#f0f8ff;border:1px solid #d7eefc;padding:8px 10px;border-radius:8px;color:var(--accent-dark);cursor:pointer;font-weight:700}
 
@@ -30,10 +31,10 @@ input[type="search"]{width:320px;padding:8px;border-radius:8px;border:1px solid 
 .day-row{background:#f3fbff;font-weight:700;color:var(--accent)}
 .slot-row:hover{background:#f7fdff}
 
-/* Wind arrow (shaft + head) — longer shaft */
+/* Wind arrow (shaft + head) — langere shaft */
 .wind-cell{display:flex;align-items:center;gap:8px}
-.wind-arrow{width:30px;height:30px;position:relative;transform-origin:center center;display:inline-block}
-.wind-arrow .shaft{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:2px;height:26px;background:#075a92;border-radius:2px}
+.wind-arrow{width:34px;height:34px;position:relative;transform-origin:center center;display:inline-block}
+.wind-arrow .shaft{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:2px;height:28px;background:#075a92;border-radius:2px}
 .wind-arrow .head{position:absolute;left:50%;top:2px;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #075a92}
 
 /* pills and colors */
@@ -48,7 +49,7 @@ input[type="search"]{width:320px;padding:8px;border-radius:8px;border:1px solid 
 }
 @media(max-width:640px){
   .wf-table th:nth-child(1), .wf-table td:nth-child(1){display:none}
-  .wind-arrow{width:22px;height:22px}
+  .wind-arrow{width:26px;height:26px}
 }
 </style>
 </head>
@@ -84,13 +85,16 @@ input[type="search"]{width:320px;padding:8px;border-radius:8px;border:1px solid 
 </div>
 
 <script>
-/* Endpoints */
+/* API endpoints */
 const GEOCODE = name => `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=nl&format=json`;
 const FORECAST = (lat,lon,days=10) => `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=windspeed_10m,windgusts_10m,winddirection_10m&current_weather=true&timezone=auto&forecast_days=${days}`;
 
 /* Exact conversion: 1 m/s = 1.943844 kts (apply once) */
-function msToKtsNum(ms){ return ms * 1.943844; } // numeric
-function ktsDisplayRoundedFromMs(ms){ return Number.isFinite(ms) ? Math.round(msToKtsNum(ms)) : null; }
+const KTS_PER_MS = 1.943844;
+function msToKtsRounded(ms){
+  if(!Number.isFinite(ms)) return null;
+  return Math.round(ms * KTS_PER_MS); // integer knopen
+}
 
 /* Color buckets based on kts (Windfinder-like thresholds) */
 function windColorClassFromKts(kts){
@@ -104,6 +108,8 @@ function windColorClassFromKts(kts){
   if(v < 35) return 'c-5';
   return 'c-6';
 }
+
+/* Compass label (16 sectors) */
 function degToCompass(deg){
   if(!Number.isFinite(deg)) return '—';
   const val = Math.floor((deg/22.5)+0.5);
@@ -111,7 +117,7 @@ function degToCompass(deg){
   return arr[val % 16];
 }
 
-/* Predefined quick spots (approx coordinates) */
+/* Quick spots (approx coords) */
 const QUICK_SPOTS = {
   wijk: { name: "Wijk aan Zee", lat: 52.4410, lon: 4.6450 },
   ouddorp: { name: "Ouddorp", lat: 51.7830, lon: 3.9000 },
@@ -137,11 +143,12 @@ document.getElementById('searchBtn').addEventListener('click', async ()=>{
         const spot = j.results[idx];
         // hide results list
         resultsEl.innerHTML = '';
-        loadSpot(spot);
+        loadSpot({ name: spot.name, lat: spot.latitude, lon: spot.longitude, country: spot.country });
       });
     });
   }catch(e){
     resultsEl.textContent='Fout bij zoeken';
+    console.error(e);
   }
 });
 
@@ -153,7 +160,7 @@ document.querySelectorAll('.quickButtons button').forEach(btn=>{
     // hide results list and clear search input
     resultsEl.innerHTML = '';
     document.getElementById('q').value = '';
-    loadSpot(spot);
+    loadSpot({ name: spot.name, lat: spot.lat, lon: spot.lon });
   });
 });
 
@@ -203,8 +210,8 @@ async function loadSpot(spot){
       superPerDay[dateStr] = {
         avg_ms,
         maxGust_ms,
-        avg_kts_num: Number.isFinite(avg_ms) ? msToKtsNum(avg_ms) : NaN,
-        maxGust_kts_num: Number.isFinite(maxGust_ms) ? msToKtsNum(maxGust_ms) : NaN
+        avg_kts_rounded: Number.isFinite(avg_ms) ? msToKtsRounded(avg_ms) : null,
+        maxGust_kts_rounded: Number.isFinite(maxGust_ms) ? msToKtsRounded(maxGust_ms) : null
       };
     }
 
@@ -212,9 +219,9 @@ async function loadSpot(spot){
     let html = `<div class="spotCard"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800">${spot.name}${spot.country? ', '+spot.country:''}</div><div style="display:flex;gap:10px;align-items:center"><div class="pill">kts</div><div class="subtitle">Tijdzone: ${j.timezone || 'lokale tijd'}</div></div></div>`;
 
     // current weather (color sensitive)
-    const curKtsNum = Number.isFinite(cur?.windspeed) ? msToKtsNum(cur.windspeed) : NaN;
-    const curKtsDisplay = Number.isFinite(curKtsNum) ? Math.round(curKtsNum) : '—';
-    const curClass = windColorClassFromKts(curKtsNum);
+    const curKtsRounded = Number.isFinite(cur?.windspeed) ? msToKtsRounded(cur.windspeed) : null;
+    const curKtsDisplay = curKtsRounded !== null ? curKtsRounded : '—';
+    const curClass = windColorClassFromKts(curKtsRounded);
     const curDir = degToCompass(cur?.winddirection);
     html += `<div style="margin-top:8px"><strong>Actueel:</strong> <span class="speed-pill ${curClass}">${curKtsDisplay} kts</span> • richting <strong>${curDir}</strong> • ${cur?.time?.replace('T',' ')||'—'}</div>`;
 
@@ -234,10 +241,10 @@ async function loadSpot(spot){
       }
 
       const superVals = superPerDay[dateStr];
-      const superAvgDisplay = Number.isFinite(superVals.avg_kts_num) ? Math.round(superVals.avg_kts_num) : '';
-      const superMaxDisplay = Number.isFinite(superVals.maxGust_kts_num) ? Math.round(superVals.maxGust_kts_num) : '';
-      const superAvgClass = Number.isFinite(superVals.avg_kts_num) ? windColorClassFromKts(superVals.avg_kts_num) : 'c-0';
-      const superMaxClass = Number.isFinite(superVals.maxGust_kts_num) ? windColorClassFromKts(superVals.maxGust_kts_num) : 'c-0';
+      const superAvgDisplay = Number.isFinite(superVals.avg_kts_rounded) ? superVals.avg_kts_rounded : '';
+      const superMaxDisplay = Number.isFinite(superVals.maxGust_kts_rounded) ? superVals.maxGust_kts_rounded : '';
+      const superAvgClass = Number.isFinite(superVals.avg_kts_rounded) ? windColorClassFromKts(superVals.avg_kts_rounded) : 'c-0';
+      const superMaxClass = Number.isFinite(superVals.maxGust_kts_rounded) ? windColorClassFromKts(superVals.maxGust_kts_rounded) : 'c-0';
 
       for(const idx of idxs){
         const t = hourly.time[idx].replace('T',' ');
@@ -246,19 +253,23 @@ async function loadSpot(spot){
         const dirDeg = Number(hourly.winddirection_10m?.[idx]);
 
         // convert once and round to integer knopen
-        const s_kts_num = Number.isFinite(s_ms) ? msToKtsNum(s_ms) : NaN;
-        const s_kts_display = Number.isFinite(s_kts_num) ? Math.round(s_kts_num) : '—';
-        const g_kts_display = Number.isFinite(g_ms) ? Math.round(msToKtsNum(g_ms)) : '—';
+        const s_kts_rounded = Number.isFinite(s_ms) ? msToKtsRounded(s_ms) : null;
+        const s_kts_display = s_kts_rounded !== null ? s_kts_rounded : '—';
+        const g_kts_rounded = Number.isFinite(g_ms) ? msToKtsRounded(g_ms) : null;
+        const g_kts_display = g_kts_rounded !== null ? g_kts_rounded : '—';
 
         const dirLabel = Number.isFinite(dirDeg) ? degToCompass(dirDeg) : '—';
-        const arrowRotate = Number.isFinite(dirDeg) ? `transform:rotate(${dirDeg}deg)` : '';
-        const speedClass = Number.isFinite(s_kts_num) ? windColorClassFromKts(s_kts_num) : 'c-0';
+        // rotate arrow so the arrowhead points to where the wind is going:
+        // API gives winddirection = direction FROM which wind blows -> add 180 to point TO
+        const arrowRotation = Number.isFinite(dirDeg) ? ( (dirDeg + 180) % 360 ) : 0;
+        const arrowStyle = `transform:rotate(${arrowRotation}deg)`;
+        const speedClass = Number.isFinite(s_kts_rounded) ? windColorClassFromKts(s_kts_rounded) : 'c-0';
 
         html += `<tr class="slot-row">
           <td class="time">${t}</td>
           <td><span class="speed-pill ${speedClass}">${s_kts_display} kts</span></td>
           <td><span class="subtitle">${g_kts_display} kts</span></td>
-          <td><div class="wind-cell"><span class="wind-arrow" style="${arrowRotate}"><span class="shaft"></span><span class="head"></span></span><span class="subtitle">${dirLabel}</span></div></td>
+          <td><div class="wind-cell"><span class="wind-arrow" style="${arrowStyle}"><span class="shaft"></span><span class="head"></span></span><span class="subtitle">${dirLabel}</span></div></td>
           <td>${superAvgDisplay !== '' ? `<span class="speed-pill ${superAvgClass}">${superAvgDisplay} kts</span>` : ''}</td>
           <td>${superMaxDisplay !== '' ? `<span class="speed-pill ${superMaxClass}">${superMaxDisplay} kts</span>` : ''}</td>
         </tr>`;
