@@ -1,1 +1,116 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>KiteForecast</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:16px;background:#f7fbff;color:#033;}
+  header{display:flex;gap:12px;align-items:center}
+  input[type="search"]{flex:1;padding:8px;border-radius:6px;border:1px solid #cde}
+  button{padding:8px 12px;border-radius:6px;border:none;background:#036;color:#fff}
+  .card{background:#fff;padding:12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-top:12px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:6px;border-bottom:1px solid #eef;text-align:left}
+  .small{font-size:0.9rem;color:#456}
+</style>
+</head>
+<body>
+<header>
+  <h1>KiteForecast</h1>
+  <div class="small">Zoek een spot, bekijk forecast, actuele wind en superforecast (kts)</div>
+</header>
+
+<div class="card">
+  <label><strong>Zoek spot</strong></label>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <input id="q" type="search" placeholder="Bijv. Tarifa, NL of Langebaan, ZA" />
+    <button id="searchBtn">Zoek</button>
+  </div>
+  <div id="results" class="small"></div>
+</div>
+
+<div id="spotCard"></div>
+
+<script>
+const geocodeUrl = name => `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=nl&format=json`;
+const forecastUrl = (lat,lon) => `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=windspeed_10m,windgusts_10m,winddirection_10m&current_weather=true&timezone=auto`;
+
+const msToKts = ms => (ms * 1.943844).toFixed(1);
+
+function degToCompass(num){
+  const val = Math.floor((num/22.5)+0.5);
+  const arr = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+  return arr[(val % 16)];
+}
+
+document.getElementById('searchBtn').addEventListener('click', async ()=>{
+  const q = document.getElementById('q').value.trim();
+  if(!q) return;
+  document.getElementById('results').textContent = 'Zoeken...';
+  try{
+    const r = await fetch(geocodeUrl(q));
+    const j = await r.json();
+    if(!j.results || j.results.length===0){ document.getElementById('results').textContent='Geen resultaten'; return; }
+    const list = j.results.map((s,i)=>`<div><button data-i="${i}" class="spotBtn">${s.name}, ${s.country} (${s.latitude.toFixed(3)}, ${s.longitude.toFixed(3)})</button></div>`).join('');
+    document.getElementById('results').innerHTML = list;
+    document.querySelectorAll('.spotBtn').forEach(btn=>{
+      btn.addEventListener('click', ()=> {
+        const idx = btn.dataset.i;
+        const spot = j.results[idx];
+        loadSpot(spot);
+      });
+    });
+  }catch(e){ document.getElementById('results').textContent='Fout bij zoeken'; }
+});
+
+async function loadSpot(spot){
+  const container = document.getElementById('spotCard');
+  container.innerHTML = `<div class="card"><strong>${spot.name}, ${spot.country}</strong><div class="small">Laden forecast...</div></div>`;
+  try{
+    const r = await fetch(forecastUrl(spot.latitude, spot.longitude));
+    const j = await r.json();
+    const cur = j.current_weather;
+    const hourly = j.hourly;
+    // current
+    const curKts = msToKts(cur.windspeed);
+    const curDir = degToCompass(cur.winddirection);
+    // compute 72h averages and max gust
+    const nowIdx = hourly.time.findIndex(t => new Date(t) >= new Date());
+    const slice = hourly.time.slice(nowIdx, nowIdx + 72);
+    const speeds = hourly.windspeed_10m.slice(nowIdx, nowIdx + 72).map(Number);
+    const gusts = hourly.windgusts_10m.slice(nowIdx, nowIdx + 72).map(Number);
+    const avg = (speeds.reduce((a,b)=>a+b,0)/speeds.length) || 0;
+    const maxGust = Math.max(...gusts);
+    // build table of next 12 hours
+    let rows = '';
+    for(let i=0;i<12 && i<speeds.length;i++){
+      const t = slice[i];
+      const s = msToKts(speeds[i]);
+      const g = msToKts(gusts[i]);
+      const dir = degToCompass(hourly.winddirection_10m[nowIdx + i]);
+      rows += `<tr><td>${t}</td><td>${s} kts</td><td>${g} kts</td><td>${dir}</td></tr>`;
+    }
+    container.innerHTML = `
+      <div class="card">
+        <h3>${spot.name}, ${spot.country}</h3>
+        <div><strong>Actueel:</strong> ${curKts} kts • richting ${curDir}</div>
+        <div class="small">Temperatuur: ${cur.temperature ?? 'n.v.t.'}°C • Tijd: ${cur.time}</div>
+      </div>
+      <div class="card">
+        <strong>Superforecast (72u)</strong>
+        <div class="small">Gemiddelde wind: <strong>${msToKts(avg)} kts</strong> • Max stoot: <strong>${msToKts(maxGust)} kts</strong></div>
+      </div>
+      <div class="card">
+        <strong>Forecast (volgende 12 uur)</strong>
+        <table><thead><tr><th>Tijd</th><th>Wind</th><th>Stoot</th><th>Richting</th></tr></thead><tbody>${rows}</tbody></table>
+      </div>
+    `;
+  }catch(e){
+    container.innerHTML = `<div class="card">Fout bij laden forecast</div>`;
+  }
+}
+</script>
+</body>
+</html>
 
