@@ -3,103 +3,50 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>KiteForecast — Windfinder stijl (superforecast in-table)</title>
+<title>KiteForecast — Windfinder stijl (10 dagen)</title>
 <style>
-  :root{
-    --bg:#eaf6ff; --card:#ffffff; --accent:#0b6fb8; --accent-dark:#075a92; --muted:#6b7b8a;
-    --calm:#dff6ff; --light:#bfefff; --moderate:#bff0d6; --fresh:#fff6c8; --strong:#ffd6b3; --very-strong:#ffb3b3; --extreme:#d7b3ff;
-    --text:#042b3a;
-  }
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--bg),#f3fbff);color:var(--text)}
-  .wrap{max-width:980px;margin:18px auto;padding:12px}
-  header{display:flex;align-items:center;gap:12px}
-  h1{margin:0;font-size:1.4rem;color:var(--accent-dark)}
-  .subtitle{color:var(--muted);font-size:0.9rem}
-
-  /* Search */
-  .searchCard{background:var(--card);border-radius:10px;padding:12px;margin-top:12px;box-shadow:0 6px 18px rgba(6,30,50,0.06);display:flex;gap:10px;align-items:center}
-  input[type="search"]{flex:1;padding:10px 12px;border-radius:8px;border:1px solid #d7eefc;font-size:0.95rem}
-  button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;font-weight:600;cursor:pointer}
-  .results{margin-top:8px;color:var(--muted);font-size:0.9rem}
-
-  /* Spot header */
-  .spotCard{background:linear-gradient(180deg,#ffffff, #f7fbff);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(6,30,50,0.04);margin-top:12px}
-  .spotMeta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:0.9rem}
-
-  /* Table */
-  .wf-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:0.92rem}
-  .wf-table thead th{background:linear-gradient(180deg,#e6f6ff,#dff3ff);color:var(--accent-dark);padding:8px 10px;text-align:left;font-weight:700;border-bottom:1px solid #d7eefc}
-  .wf-table tbody td{padding:8px 10px;border-bottom:1px solid #f0f6fb;vertical-align:middle}
-  .day-row{background:#f3fbff;color:var(--accent-dark);font-weight:700}
-  .slot-row:hover{background:#f7fdff}
-  .super-row{background:linear-gradient(90deg,#fff7e6,#fff4e0);font-weight:700;color:#6b4a00}
-
-  /* Wind arrow (shaft + head) */
-  .wind-cell{display:flex;align-items:center;gap:8px}
-  .wind-arrow{
-    width:22px;height:22px;display:inline-block;position:relative;transform-origin:center center;
-  }
-  .wind-arrow .shaft{
-    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:2px;height:14px;background:#075a92;border-radius:2px;
-  }
-  .wind-arrow .head{
-    position:absolute;left:50%;top:6px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid #075a92;
-  }
-  .kts{font-weight:800;color:var(--text)}
-  .gust{color:var(--muted);font-size:0.9rem}
-  .time{color:var(--muted);font-weight:700}
-
-  /* color scale for wind speed (kts) similar to Windfinder */
-  .c-0 { background: var(--calm); }
-  .c-1 { background: var(--light); }
-  .c-2 { background: var(--moderate); }
-  .c-3 { background: var(--fresh); }
-  .c-4 { background: var(--strong); }
-  .c-5 { background: var(--very-strong); }
-  .c-6 { background: var(--extreme); }
-
-  .speed-pill{display:inline-block;padding:6px 8px;border-radius:8px;font-weight:700;color:var(--text)}
-  .super-pill{display:inline-block;padding:6px 8px;border-radius:8px;font-weight:700;color:var(--text);opacity:0.95}
-
-  /* compact labels */
-  .pill{background:#e6f6ff;color:var(--accent-dark);padding:6px 8px;border-radius:999px;font-weight:700;font-size:0.85rem}
-
-  @media(max-width:640px){
-    .wf-table thead th:nth-child(1), .wf-table td:nth-child(1){display:none}
-    .wind-arrow{width:18px;height:18px}
-  }
+:root{--bg:#eaf6ff;--card:#fff;--accent:#0b6fb8;--muted:#6b7b8a;--text:#042b3a;
+  --calm:#dff6ff;--light:#bfefff;--moderate:#bff0d6;--fresh:#fff6c8;--strong:#ffd6b3;--very-strong:#ffb3b3;--extreme:#d7b3ff;}
+html,body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--bg),#f3fbff);color:var(--text)}
+.wrap{max-width:980px;margin:18px auto;padding:12px}
+.searchCard{background:var(--card);padding:12px;border-radius:10px;display:flex;gap:8px;align-items:center}
+input[type="search"]{flex:1;padding:10px;border-radius:8px;border:1px solid #d7eefc}
+button{background:var(--accent);color:#fff;padding:10px 14px;border-radius:8px;border:0;cursor:pointer}
+.spotCard{background:linear-gradient(180deg,#fff,#f7fbff);padding:12px;border-radius:10px;margin-top:12px;box-shadow:0 6px 18px rgba(6,30,50,0.04)}
+.wf-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:0.92rem}
+.wf-table th{background:linear-gradient(180deg,#e6f6ff,#dff3ff);padding:8px;text-align:left}
+.wf-table td{padding:8px;border-bottom:1px solid #f0f6fb}
+.day-row{background:#f3fbff;font-weight:700;color:var(--accent)}
+.slot-row:hover{background:#f7fdff}
+.wind-cell{display:flex;align-items:center;gap:8px}
+.wind-arrow{width:26px;height:26px;position:relative;transform-origin:center center;display:inline-block}
+.wind-arrow .shaft{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:2px;height:20px;background:#075a92;border-radius:2px}
+.wind-arrow .head{position:absolute;left:50%;top:4px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid #075a92}
+.speed-pill{display:inline-block;padding:6px 8px;border-radius:8px;font-weight:700;color:var(--text)}
+.c-0{background:var(--calm)}.c-1{background:var(--light)}.c-2{background:var(--moderate)}.c-3{background:var(--fresh)}.c-4{background:var(--strong)}.c-5{background:var(--very-strong)}.c-6{background:var(--extreme)}
+.pill{background:#e6f6ff;padding:6px 8px;border-radius:999px;font-weight:700}
+.subtitle{color:var(--muted);font-size:0.9rem}
+@media(max-width:640px){ .wf-table th:nth-child(1), .wf-table td:nth-child(1){display:none} }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div>
-      <h1>KiteForecast</h1>
-      <div class="subtitle">Windfinder‑stijl — 2‑uurs slots 08:00–20:00 • windsnelheden in kts • superforecast in extra kolommen</div>
-    </div>
-  </header>
-
-  <div class="searchCard" role="search">
-    <input id="q" type="search" placeholder="Zoek spot — bijv. Tarifa, Langebaan, Scheveningen" />
-    <button id="searchBtn">Zoek</button>
-  </div>
-  <div id="results" class="results"></div>
-
+  <header><h1>KiteForecast</h1><div class="subtitle">10 dagen • 2‑uurs slots 08:00–20:00 • superforecast in extra kolommen</div></header>
+  <div class="searchCard"><input id="q" type="search" placeholder="Zoek spot — bijv. Tarifa, Langebaan, Scheveningen"><button id="searchBtn">Zoek</button></div>
+  <div id="results" class="subtitle"></div>
   <div id="spotCard"></div>
 </div>
 
 <script>
-/* Endpoints */
 const GEOCODE = name => `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=nl&format=json`;
-const FORECAST = (lat,lon,days=4) => `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=windspeed_10m,windgusts_10m,winddirection_10m&current_weather=true&timezone=auto&forecast_days=${days}`;
+const FORECAST = (lat,lon,days=10) => `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=windspeed_10m,windgusts_10m,winddirection_10m&current_weather=true&timezone=auto&forecast_days=${days}`;
 
-/* Conversions */
-const msToKtsNum = ms => (ms * 1.943844);
-const msToKts = ms => (msToKtsNum(ms)).toFixed(1);
+/* exacte conversie: 1 m/s = 1.943844 kts */ 
+function msToKtsNum(ms){ return ms * 1.943844; } /* numerieke */
+function formatKts(ms){ return isFinite(ms) ? (msToKtsNum(ms)).toFixed(1) : '—'; }
 
-/* Wind color bucket based on kts (approx Windfinder-like) */
-function windColorClass(kts){
-  if(kts === null || kts === undefined || isNaN(kts)) return 'c-0';
+function windColorClassFromKts(kts){
+  if(!isFinite(kts)) return 'c-0';
   const v = Number(kts);
   if(v < 5) return 'c-0';
   if(v < 10) return 'c-1';
@@ -109,174 +56,90 @@ function windColorClass(kts){
   if(v < 35) return 'c-5';
   return 'c-6';
 }
-
 function degToCompass(deg){
-  if(deg === null || deg === undefined || isNaN(deg)) return '—';
+  if(!isFinite(deg)) return '—';
   const val = Math.floor((deg/22.5)+0.5);
   const arr = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
-  return arr[(val % 16)];
+  return arr[val % 16];
 }
 
-/* UI: search */
+/* search */
 document.getElementById('searchBtn').addEventListener('click', async ()=>{
-  const q = document.getElementById('q').value.trim();
-  if(!q) return;
-  const resEl = document.getElementById('results');
-  resEl.textContent = 'Zoeken...';
-  try{
-    const r = await fetch(GEOCODE(q));
-    const j = await r.json();
-    if(!j.results || j.results.length===0){ resEl.textContent='Geen resultaten'; return; }
-    const list = j.results.map((s,i)=>`<div style="margin-top:8px"><button data-i="${i}" class="spotBtn" style="background:transparent;border:0;color:var(--accent-dark);font-weight:700;cursor:pointer">${s.name}${s.admin1? ', '+s.admin1:''}, ${s.country} — ${s.latitude.toFixed(3)}, ${s.longitude.toFixed(3)}</button></div>`).join('');
-    resEl.innerHTML = list;
-    document.querySelectorAll('.spotBtn').forEach(btn=>{
-      btn.addEventListener('click', ()=> {
-        const idx = btn.dataset.i;
-        const spot = j.results[idx];
-        loadSpot(spot);
-      });
-    });
-  }catch(e){
-    resEl.textContent='Fout bij zoeken';
-  }
+  const q = document.getElementById('q').value.trim(); if(!q) return;
+  const res = document.getElementById('results'); res.textContent='Zoeken...';
+  try{ const r = await fetch(GEOCODE(q)); const j = await r.json();
+    if(!j.results || !j.results.length){ res.textContent='Geen resultaten'; return; }
+    res.innerHTML = j.results.map((s,i)=>`<div style="margin-top:8px"><button data-i="${i}" class="spotBtn" style="background:none;border:0;color:#075a92;cursor:pointer">${s.name}${s.admin1? ', '+s.admin1:''}, ${s.country}</button></div>`).join('');
+    document.querySelectorAll('.spotBtn').forEach(b=>b.addEventListener('click', ()=> loadSpot(j.results[b.dataset.i])));
+  }catch(e){ res.textContent='Fout bij zoeken'; }
 });
 
-/* Build table with superforecast columns (super values are the same for all slots of the day) */
+/* main */
 async function loadSpot(spot){
   const container = document.getElementById('spotCard');
-  container.innerHTML = `<div class="spotCard"><div style="font-weight:700">${spot.name}, ${spot.country}</div><div class="subtitle">Laden forecast…</div></div>`;
+  container.innerHTML = `<div class="spotCard"><strong>${spot.name}, ${spot.country}</strong><div class="subtitle">Laden…</div></div>`;
   try{
-    const r = await fetch(FORECAST(spot.latitude, spot.longitude, 4));
-    const j = await r.json();
-    const cur = j.current_weather;
-    const hourly = j.hourly;
-    if(!hourly || !hourly.time){ container.innerHTML = `<div class="spotCard">Geen forecastdata beschikbaar</div>`; return; }
+    const r = await fetch(FORECAST(spot.latitude, spot.longitude, 10));
+    const j = await r.json(); const cur = j.current_weather; const hourly = j.hourly;
+    if(!hourly || !hourly.time){ container.innerHTML = `<div class="spotCard">Geen data</div>`; return; }
 
-    // map time -> index
-    const timeIndex = {};
-    hourly.time.forEach((t,i)=> timeIndex[t] = i);
+    const timeIndex = {}; hourly.time.forEach((t,i)=> timeIndex[t]=i);
+    const days = []; for(let d=0; d<10; d++){ const dt=new Date(); dt.setDate(dt.getDate()+d); days.push(dt.toISOString().slice(0,10)); }
 
-    // days: today + next 2
-    const days = [];
-    for(let d=0; d<3; d++){
-      const dt = new Date();
-      dt.setDate(dt.getDate() + d);
-      days.push(dt.toISOString().slice(0,10)); // YYYY-MM-DD
-    }
-
-    // collect indices for 08,10,...,20 each day
     const slotsPerDay = {};
-    days.forEach(dateStr=>{
-      slotsPerDay[dateStr] = [];
-      for(let h=8; h<=20; h+=2){
-        const hh = String(h).padStart(2,'0');
-        let tStr = `${dateStr}T${hh}:00`;
-        let idx = timeIndex[tStr];
-        if(idx === undefined){
-          idx = hourly.time.findIndex(ts => ts.startsWith(`${dateStr}T${hh}:`));
-        }
-        if(idx !== -1 && idx !== undefined) slotsPerDay[dateStr].push(idx);
-      }
-    });
+    days.forEach(dateStr=>{ slotsPerDay[dateStr]=[]; for(let h=8; h<=20; h+=2){
+      const hh=String(h).padStart(2,'0'); let tStr=`${dateStr}T${hh}:00`; let idx=timeIndex[tStr];
+      if(idx===undefined) idx = hourly.time.findIndex(ts=>ts.startsWith(`${dateStr}T${hh}:`));
+      if(idx!==-1 && idx!==undefined) slotsPerDay[dateStr].push(idx);
+    }});
 
-    // Precompute superforecast per day (avg wind m/s across slots 08-20, max gust m/s)
+    // precompute super per day (may be empty)
     const superPerDay = {};
     for(const dateStr of days){
-      const idxs = slotsPerDay[dateStr] || [];
-      const speeds = [];
-      const gusts = [];
-      for(const idx of idxs){
-        const s_ms = Number(hourly.windspeed_10m[idx]);
-        const g_ms = hourly.windgusts_10m ? Number(hourly.windgusts_10m[idx]) : NaN;
-        if(isFinite(s_ms)) speeds.push(s_ms);
-        if(isFinite(g_ms)) gusts.push(g_ms);
+      const idxs = slotsPerDay[dateStr]||[]; const speeds=[]; const gusts=[];
+      for(const idx of idxs){ const s_ms=Number(hourly.windspeed_10m[idx]); const g_ms=Number(hourly.windgusts_10m?.[idx]);
+        if(isFinite(s_ms)) speeds.push(s_ms); if(isFinite(g_ms)) gusts.push(g_ms);
       }
-      const avg_ms = speeds.length ? (speeds.reduce((a,b)=>a+b,0) / speeds.length) : NaN;
+      const avg_ms = speeds.length ? (speeds.reduce((a,b)=>a+b,0)/speeds.length) : NaN;
       const maxGust_ms = gusts.length ? Math.max(...gusts) : NaN;
-      superPerDay[dateStr] = {
-        avg_ms,
-        maxGust_ms,
-        avg_kts: isFinite(avg_ms) ? msToKts(avg_ms) : null,
-        maxGust_kts: isFinite(maxGust_ms) ? msToKts(maxGust_ms) : null
-      };
+      superPerDay[dateStr] = { avg_ms, maxGust_ms, avg_kts: isFinite(avg_ms)? msToKtsNum(avg_ms): NaN, maxGust_kts: isFinite(maxGust_ms)? msToKtsNum(maxGust_ms): NaN };
     }
 
-    // Build HTML
-    let html = `<div class="spotCard" style="margin-top:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="font-weight:800">${spot.name}, ${spot.country}</div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <div class="pill">kts</div>
-          <div class="subtitle">Tijdzone: ${j.timezone || 'lokale tijd'}</div>
-        </div>
-      </div>`;
+    // build html
+    let html = `<div class="spotCard"><div style="display:flex;justify-content:space-between"><div style="font-weight:800">${spot.name}, ${spot.country}</div><div style="display:flex;gap:10px;align-items:center"><div class="pill">kts</div><div class="subtitle">${j.timezone||'lokale tijd'}</div></div></div>`;
+    const curKtsNum = isFinite(cur?.windspeed) ? msToKtsNum(cur.windspeed) : NaN;
+    const curKts = isFinite(curKtsNum)? curKtsNum.toFixed(1): '—';
+    const curClass = windColorClassFromKts(curKtsNum);
+    const curDir = degToCompass(cur?.winddirection);
+    html += `<div style="margin-top:8px"><strong>Actueel:</strong> <span class="speed-pill ${curClass}">${curKts} kts</span> • richting <strong>${curDir}</strong> • ${cur?.time?.replace('T',' ')||'—'}</div>`;
 
-    // Current weather
-    const curKts = cur && cur.windspeed !== undefined ? msToKts(cur.windspeed) : '—';
-    const curDir = cur && cur.winddirection !== undefined ? degToCompass(cur.winddirection) : '—';
-    const curTime = cur && cur.time ? cur.time.replace('T',' ') : '—';
-    html += `<div style="margin-top:8px;color:var(--muted)"><strong>Actueel:</strong> <span style="font-weight:800">${curKts} kts</span> • richting <strong>${curDir}</strong> • ${curTime}</div>`;
-
-    // Table header: Time | Wind | Gust | Dir | Super avg (day) | Super max gust (day)
-    html += `<table class="wf-table"><thead><tr>
-      <th>Tijd</th><th>Wind</th><th>Stoot</th><th>Richting</th><th>Super avg</th><th>Super max stoot</th>
-    </tr></thead><tbody>`;
-
+    html += `<table class="wf-table"><thead><tr><th>Tijd</th><th>Wind</th><th>Stoot</th><th>Richting</th><th>Super avg</th><th>Super max stoot</th></tr></thead><tbody>`;
     for(const dateStr of days){
-      const idxs = slotsPerDay[dateStr];
-      const sampleIdx = idxs && idxs.length ? idxs[0] : hourly.time.findIndex(t=>t.startsWith(dateStr));
-      const sampleTime = hourly.time[sampleIdx] || (dateStr + 'T08:00');
+      const idxs = slotsPerDay[dateStr]; const sampleIdx = idxs?.[0] ?? hourly.time.findIndex(t=>t.startsWith(dateStr));
+      const sampleTime = hourly.time[sampleIdx] || (dateStr+'T08:00');
       const dayLabel = new Date(sampleTime).toLocaleDateString(undefined,{weekday:'short',day:'2-digit',month:'short'});
       html += `<tr class="day-row"><td colspan="6">${dayLabel}</td></tr>`;
-
-      if(!idxs || idxs.length===0){
-        html += `<tr><td colspan="6" class="subtitle">Geen data voor 08–20</td></tr>`;
-        continue;
-      }
-
-      // super values for this day (same for each slot)
-      const superVals = superPerDay[dateStr] || {};
-      const superAvgKts = superVals.avg_kts !== null ? superVals.avg_kts : '—';
-      const superMaxGustKts = superVals.maxGust_kts !== null ? superVals.maxGust_kts : '—';
-      const superColorClass = (superVals.avg_kts !== null) ? windColorClass(Number(superVals.avg_kts)) : 'c-0';
-      const superMaxColorClass = (superVals.maxGust_kts !== null) ? windColorClass(Number(superVals.maxGust_kts)) : 'c-0';
+      if(!idxs || idxs.length===0){ html += `<tr><td colspan="6" class="subtitle">Geen data voor 08–20</td></tr>`; continue; }
+      const superVals = superPerDay[dateStr];
+      const superAvgKts = isFinite(superVals.avg_kts) ? superVals.avg_kts.toFixed(1) : '';
+      const superMaxKts = isFinite(superVals.maxGust_kts) ? superVals.maxGust_kts.toFixed(1) : '';
+      const superAvgClass = isFinite(superVals.avg_kts) ? windColorClassFromKts(superVals.avg_kts) : 'c-0';
+      const superMaxClass = isFinite(superVals.maxGust_kts) ? windColorClassFromKts(superVals.maxGust_kts) : 'c-0';
 
       for(const idx of idxs){
         const t = hourly.time[idx].replace('T',' ');
-        const s_ms = Number(hourly.windspeed_10m[idx]);
-        const g_ms = hourly.windgusts_10m ? Number(hourly.windgusts_10m[idx]) : NaN;
-        const dirDeg = hourly.winddirection_10m ? Number(hourly.winddirection_10m[idx]) : NaN;
-
-        const s_kts_num = isFinite(s_ms) ? msToKtsNum(s_ms) : NaN;
-        const s_kts = isFinite(s_ms) ? msToKts(s_ms) : '—';
-        const g_kts = isFinite(g_ms) ? msToKts(g_ms) : '—';
-        const dirLabel = isFinite(dirDeg) ? degToCompass(dirDeg) : '—';
-        const arrowRotate = isFinite(dirDeg) ? `transform:rotate(${dirDeg}deg)` : '';
-
-        const speedClass = isFinite(s_kts_num) ? windColorClass(s_kts_num) : 'c-0';
-
-        html += `<tr class="slot-row">
-          <td class="time">${t}</td>
-          <td><span class="speed-pill ${speedClass}">${s_kts} kts</span></td>
-          <td><span class="gust">${g_kts} kts</span></td>
-          <td><div class="wind-cell"><span class="wind-arrow" style="${arrowRotate}">
-                <span class="shaft"></span><span class="head"></span>
-              </span><span class="subtitle">${dirLabel}</span></div></td>
-          <td><span class="super-pill ${superColorClass}">${superAvgKts} kts</span></td>
-          <td><span class="super-pill ${superMaxColorClass}">${superMaxGustKts} kts</span></td>
-        </tr>`;
+        const s_ms = Number(hourly.windspeed_10m[idx]); const g_ms = Number(hourly.windgusts_10m?.[idx]); const dirDeg = Number(hourly.winddirection_10m?.[idx]);
+        const s_kts_num = isFinite(s_ms)? msToKtsNum(s_ms): NaN; const s_kts = isFinite(s_kts_num)? s_kts_num.toFixed(1): '—';
+        const g_kts = isFinite(g_ms)? msToKtsNum(g_ms).toFixed(1): '—';
+        const dirLabel = isFinite(dirDeg)? degToCompass(dirDeg): '—';
+        const arrowRotate = isFinite(dirDeg)? `transform:rotate(${dirDeg}deg)` : '';
+        const speedClass = isFinite(s_kts_num)? windColorClassFromKts(s_kts_num) : 'c-0';
+        html += `<tr class="slot-row"><td class="time">${t}</td><td><span class="speed-pill ${speedClass}">${s_kts} kts</span></td><td><span class="subtitle">${g_kts} kts</span></td><td><div class="wind-cell"><span class="wind-arrow" style="${arrowRotate}"><span class="shaft"></span><span class="head"></span></span><span class="subtitle">${dirLabel}</span></div></td><td>${superAvgKts? `<span class="speed-pill ${superAvgClass}">${superAvgKts} kts</span>` : ''}</td><td>${superMaxKts? `<span class="speed-pill ${superMaxClass}">${superMaxKts} kts</span>` : ''}</td></tr>`;
       }
-
-      // Add a final emphasized super-row (summary) for clarity (optional)
-      html += `<tr class="super-row"><td>Dag samenvatting (08–20)</td><td>${superAvgKts} kts</td><td>${superMaxGustKts} kts</td><td class="subtitle">Gemiddelde &amp; max stoot</td><td colspan="2"></td></tr>`;
     }
-
     html += `</tbody></table></div>`;
     container.innerHTML = html;
-  }catch(e){
-    console.error(e);
-    container.innerHTML = `<div class="spotCard">Fout bij laden forecast</div>`;
-  }
+  }catch(e){ console.error(e); container.innerHTML = `<div class="spotCard">Fout bij laden forecast</div>`; }
 }
 </script>
 </body>
